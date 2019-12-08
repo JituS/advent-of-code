@@ -1,6 +1,6 @@
 import scala.io.Source
+import scala.util.Try
 
-//
 object CrossedWires {
   //  def main(args: Array[String]): Unit = {
   //    val lines = readFileAsLines("wire_paths.txt")
@@ -70,6 +70,12 @@ object CrossedWires {
     }
   }
 
+  def inLine(point1: (Int, Int), point2: (Int, Int), pointToCheck: (Int, Int)): Boolean = {
+    if (point1._1.equals(point2._1)) return pointToCheck._1.equals(point2._1)
+    if (point1._2.equals(point2._2)) return pointToCheck._2.equals(point2._2)
+    ((point1._1 - point2._1) * (point1._2 - point2._2)).equals((point2._1 - pointToCheck._1) * (point2._2 - pointToCheck._2))
+  }
+
   def main(args: Array[String]): Unit = {
     val cords = readFileAsLines("wire_paths.txt")
       .map { line =>
@@ -90,15 +96,31 @@ object CrossedWires {
           }
         }
       }
-    val firstWire = cords.head.sliding(2).toArray
+    val firstWire: Array[Array[(Int, Int)]] = cords.head.sliding(2).toArray
     val secondWire = cords(1).sliding(2).toArray
-    println(firstWire.flatMap { line1 =>
-      secondWire.map { line2 =>
-        val maybeTuple = lineIntersection(line1, line2)
-        if(maybeTuple.isDefined && maybeTuple.get.equals((0, 0))) None else maybeTuple
+    val intersectionPoints = firstWire.flatMap { line1 =>
+      secondWire.flatMap { line2 =>
+        if (line1(0)._1 == line2(0)._1 && line1(0)._1 == 0) {
+          None
+        } else {
+          lineIntersection(line1, line2)
+        }
       }
-    }.filter(_.isDefined)
-      .foldLeft(Double.PositiveInfinity)((a, b) => if (math.abs(b.get._1) + math.abs(b.get._2) <= a) math.abs(b.get._1) + math.abs(b.get._2) else a))
+    }
+    println(intersectionPoints.map { point: (Int, Int) =>
+      val firstWireLength: Array[Array[(Int, Int)]] = firstWire.takeWhile(lineCords => !inLine(lineCords.head, lineCords(1), point))
+      val firstWireDistance = Try((firstWireLength :+ Array(firstWireLength.last(1), point))
+        .foldLeft(0) { (accumulator, lineCords) =>
+
+          accumulator + math.max(math.abs(lineCords(0)._1 - lineCords(1)._1), math.abs(lineCords(0)._2 - lineCords(1)._2))
+        })
+      val secondWireLength = secondWire.takeWhile(lineCords => !inLine(lineCords.head, lineCords(1), point))
+      val secondWireDistance = Try((secondWireLength :+ Array(secondWireLength.last(1), point))
+        .foldLeft(0) { (accumulator, lineCords) =>
+          accumulator + math.max(math.abs(lineCords(0)._1 - lineCords(1)._1), math.abs(lineCords(0)._2 - lineCords(1)._2))
+        })
+      firstWireDistance.getOrElse(0) + secondWireDistance.getOrElse(0)
+    }.sorted.toList)
   }
 }
 

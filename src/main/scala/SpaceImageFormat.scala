@@ -16,8 +16,17 @@ object SpaceImageFormat {
     val input = readFileAsLines("image.txt").next().split("")
     val width = 25
     val height = 6
-    val output: Array[Array[Array[String]]] = input.grouped(width * height).toArray.map(_.grouped(width).toArray)
-    val min = output.min
-    println(min.map(a => a.count(e => e == "2")).sum * min.map(a => a.count(e => e == "1")).sum)
+    val output = input.grouped(width * height).toArray.map(_.grouped(width).toArray)
+    output.reduce { (a, b) => {
+      (a zip b).map { case (aList, bList) =>
+        (aList zip bList).map { case (aItem, bItem) =>
+          if (aItem == "2") bItem else aItem
+        }
+      }
+    }
+    }.foreach(e => {
+      e.foreach(a => if (a != "0") print(a) else print(" "))
+      println()
+    })
   }
 }

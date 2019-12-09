@@ -8,13 +8,15 @@ object UniversalOrbitMap {
   }
 
   def main(args: Array[String]): Unit = {
-    val orbits = readFileAsLines("universal_orbit_map.txt").map(_.split("\\)", 2) match {
+    val map = readFileAsLines("universal_orbit_map.txt").map(_.split("\\)", 2) match {
       case Array(key, value) => value -> key
     }).toMap
-    println(orbits.map { orbit: (String, String) =>
-      (orbit._1, orbits.foldLeft(Array(orbit._2)) { (acc, _) =>
-        acc :+ orbits.getOrElse(acc.last, "")
-      }.count(!_.equals("")))
-    }.values.sum)
+    val value = map.map { each: (String, String) =>
+      (each._1, map.foldLeft(Array(each._2)) { (acc, _) =>
+        acc :+ map.getOrElse(acc.last, "")
+      }.filter(!_.equals("")))
+    }
+    val common = value("YOU").intersect(value("SAN"))
+    println(value("YOU").count(!common.contains(_)) + value("SAN").count(!common.contains(_)))
   }
 }

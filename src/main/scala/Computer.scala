@@ -5,7 +5,8 @@ object Computer {
 
   def getIndex(opcode: String): Int = {
     opcode match {
-      case a if a.endsWith("4") || a.endsWith("3") => 1
+      case a if List("4", "3").exists(a.endsWith) => 1
+      case a if List("5", "6").exists(a.endsWith) => 2
       case _ => 3
     }
   }
@@ -16,21 +17,39 @@ object Computer {
     val modes: Array[String] = operation.dropRight(2)
     modes match {
       case Array(a, b, c) =>
-        val value1 = if (c == "0") inputArray(inputArray(i + 1).toInt) else inputArray(i + 1)
-        val value2 = if (b == "0" && !operand.endsWith("4")) inputArray(inputArray(i + 2).toInt) else inputArray(i + 2)
-        calculate(operand, value1, value2)
+        operand match {
+          case "01" =>
+            val (value1, value2) = getValues(i, inputArray, b, c)
+            (Some((value1.toInt + value2.toInt).toString), i + getIndex(operand))
+          case "02" =>
+            val (value1, value2) = getValues(i, inputArray, b, c)
+            (Some((value1.toInt * value2.toInt).toString), i + getIndex(operand))
+          case "03" =>
+            (Some(StdIn.readLine), i + getIndex(operand))
+          case "04" =>
+            val value1 = if (c == "0") inputArray(inputArray(i + 1).toInt) else inputArray(i + 1)
+            println(value1)
+            (None, i + getIndex(operand))
+          case "05" =>
+            val (value1, value2) = getValues(i, inputArray, b, c)
+            (None, if (value1.toInt != 0) value2.toInt - 1 else i + getIndex(operand))
+          case "06" =>
+            val (value1, value2) = getValues(i, inputArray, b, c)
+            (None, if (value1.toInt == 0) value2.toInt - 1 else i + getIndex(operand))
+          case "07" =>
+            val (value1, value2) = getValues(i, inputArray, b, c)
+            (Some((if (value1 < value2) 1 else 0).toString), i + getIndex(operand))
+          case "08" =>
+            val (value1, value2) = getValues(i, inputArray, b, c)
+            (Some((if (value1 == value2) 1 else 0).toString), i + getIndex(operand))
+        }
     }
   }
 
-  def calculate(operation: String, val1: String, val2: String): String = {
-    (operation match {
-      case "01" => val1.toInt + val2.toInt
-      case "02" => val1.toInt * val2.toInt
-      case "03" => StdIn.readLine
-      case "04" =>
-        println(val1)
-        val1
-    }).toString
+  private def getValues(i: Int, inputArray: Array[String], b: String, c: String) = {
+    val value1 = if (c == "0") inputArray(inputArray(i + 1).toInt) else inputArray(i + 1)
+    val value2 = if (b == "0") inputArray(inputArray(i + 2).toInt) else inputArray(i + 2)
+    (value1.toInt, value2.toInt)
   }
 
   private def readFileAsLines(fileName: String) = {
@@ -39,9 +58,9 @@ object Computer {
   }
 
   @tailrec def processInput(currentIndex: Int, inputArray: Array[String]) {
-    val outputIndex = inputArray(currentIndex + getIndex(inputArray(currentIndex))).toInt
-    inputArray(outputIndex) = handleParameterMode(currentIndex, inputArray)
-    processInput(currentIndex + getIndex(inputArray(currentIndex)) + 1, inputArray)
+    val tuple = handleParameterMode(currentIndex, inputArray)
+    tuple._1.foreach(inputArray(inputArray(tuple._2).toInt) = _)
+    processInput(tuple._2 + 1, inputArray)
   }
 
   def main(args: Array[String]): Unit = {
